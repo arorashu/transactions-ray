@@ -1,0 +1,12 @@
+[
+  {
+    "id": "3000",
+    "name": "Alice",
+    "bookings": []
+  },
+  {
+    "id": "3001",
+    "name": "Bob",
+    "bookings": []
+  }
+]
