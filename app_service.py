@@ -18,18 +18,10 @@ if __name__ == "__main__":
     car_results, flight_results = ray.get(tripService.get_trip_options.remote(date, source, destination))
     print(f"car results: {car_results}")
 
-    # flight_id = flight_results[0]['id']
-    # print(f"flightId: {flight_id}")
-    # is_success, trip_details = ray.get(flight_booker.book_trip.remote(flight_id))
-    # if is_success:
-    #     print(f"Successfully booked: {trip_details}")
-    # else:
-    #     print("Failed to book flight")
-    #
-    # car_id = car_results[0]['id']
-    # print(f"car_id: {car_id}")
-    # is_success, trip_details = ray.get(car_booker.book_trip.remote(car_id))
-    # if is_success:
-    #     print(f"Successfully booked: {trip_details}")
-    # else:
-    #     print("Failed to book Car")
+    flight_id = flight_results[0]['id']
+    print(f"flightId: {flight_id}")
+    car_id = car_results[0]['id']
+    print(f"car_id: {car_id}")
+
+    tripService.make_booking.remote(flight_id, car_id)
+

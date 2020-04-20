@@ -9,9 +9,18 @@ from flight_service import FlightBooker
 @ray.remote
 class TripBooker:
     def __init__(self, trip_db_handle):
-        # print("trip booking constructor")
-        trip_db = []
-        self.trip_db_handle = ray.put(trip_db)
+        self.trip_db_handle = trip_db_handle
+        self.flight_booker = FlightBooker.remote()
+        self.car_booker = CarBooker.remote()
+        # Question: which method to use to instantiate services?
+        # have a list of services and then round robin?
+        # how to load balance?
+        # different implementation in get trip and make booking
+
+    # def __init__(self):
+    #     trip_db = []
+    #     self.trip_db_handle = ray.put(trip_db)
+
 
     def get_trip_options(self, date, source, dest):
         print(f"search Trip options for: date {date}, from: {source}, to:{dest}")
@@ -23,6 +32,19 @@ class TripBooker:
         print("car results count: " + str(len(car_results)))
         print("flight results count : " + str(len(flight_results)))
         return car_results, flight_results
+
+    def make_booking(self, flight_id, car_id):
+        flight_booker, car_booker = self.flight_booker, self.car_booker
+        is_success, trip_details = ray.get(flight_booker.book_trip.remote(flight_id))
+        if is_success:
+            print(f"Successfully booked: {trip_details}")
+        else:
+            print("Failed to book flight")
+        is_success, trip_details = ray.get(car_booker.book_trip.remote(car_id))
+        if is_success:
+            print(f"Successfully booked: {trip_details}")
+        else:
+            print("Failed to book Car")
 
 
 if __name__ == "__main__":
