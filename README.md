@@ -13,7 +13,7 @@
 
 3. Run Trip Service
 ```
-    $ python trip_service.py
+    $ python app_service.py
 ```
 
 
