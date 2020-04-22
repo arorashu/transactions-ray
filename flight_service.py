@@ -1,5 +1,6 @@
 # Trip booking class
 
+import atexit
 import json
 
 import ray
@@ -13,10 +14,21 @@ class FlightBooker:
         # list of dict
         self.flight_db_handle = ray.put(flight_db)
 
-    # @ray.remote spans a new process (new pid), anything that you print here
-    # does not show on the console, unless you do a ray.get() on the calling process
-    #
+        # def cleanup_flight_local():
+        #     print("cleanup flight local called")
+        #     with open("./flight_db.json", 'w') as f:
+        #         json.dump(ray.get(self.flight_db_handle), f, indent=4)
+        #
+        # atexit.register(cleanup_flight_local)
 
+    def cleanup(self):
+        print("cleanup flight class called")
+        with open("./flight_db.json", 'w') as f:
+            json.dump(ray.get(self.flight_db_handle), f, indent=4)
+
+    # args: date, source, dest
+    # returns: list <flight_options>
+    @ray.method(num_return_vals=1)
     def get_trip_options(self, date, source, dest):
         # print(f"search Flight options for: date {date}, from: {source}, to: {dest}")
         flight_db = ray.get(self.flight_db_handle)
@@ -30,13 +42,14 @@ class FlightBooker:
 
     # currently, can only book 1 seat at a time
     # currently doesn't hold locks
+    @ray.method(num_return_vals=2)
     def book_trip(self, flight_id):
         flight_db = ray.get(self.flight_db_handle)
         is_success = False
         trip_details = {}
 
         for flight_option in flight_db:
-            if flight_option['id'] == flight_id:
+            if flight_option['id'] == flight_id and int(flight_option['seats']) > 0:
                 is_success = True
                 trip_details = flight_option
                 flight_option['seats'] = str(int(flight_option['seats']) - 1)
@@ -47,7 +60,24 @@ class FlightBooker:
         # print("New flight db: " + str(flight_db))
         return is_success, trip_details
 
+    # def cancel_booking(self, flight_id):
+
+
+def cleanup(flightBooker):
+    print("global cleanup called")
+    flightBooker.cleanup.remote()
+    # del flightBooker
 
 if __name__ == "__main__":
-    flightBooker = FlightBooker()
-    flightBooker.get_trip_options("20200430", "BOS", "DEL")
+    ray.init()
+    flightBooker = FlightBooker.remote()
+    atexit.register(cleanup, flightBooker)
+    flight_options = ray.get(flightBooker.get_trip_options.remote("20200430", "BOS", "DEL"))
+    print(f"flight options: {flight_options}")
+    is_success, booking = ray.get(flightBooker.book_trip.remote("1002"))
+    is_success, booking = ray.get(flightBooker.book_trip.remote("1002"))
+    is_success, booking = ray.get(flightBooker.book_trip.remote("1002"))
+    is_success, booking = ray.get(flightBooker.book_trip.remote("1002"))
+    is_success, booking = ray.get(flightBooker.book_trip.remote("1002"))
+    # del flightBooker
+    print(f"booking: {booking}")

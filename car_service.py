@@ -1,8 +1,8 @@
 # Trip booking class
 
-import ray
-import time
 import json
+
+import ray
 
 
 @ray.remote
@@ -14,6 +14,13 @@ class CarBooker:
             car_db = json.load(f)
         self.car_db_handle = ray.put(car_db)
 
+    def cleanup(self):
+        print("cleanup car class called")
+        with open("./car_db.json", 'w') as file:
+            json.dump(ray.get(self.car_db_handle), file, indent=4)
+
+    # args: date, airport
+    # returns: list <trip_options>
     def get_trip_options(self, date, airport):
         # print(f"search Car options to airport: date {date}, airport: {airport}")
         car_db = ray.get(self.car_db_handle)
@@ -31,10 +38,10 @@ class CarBooker:
         trip_details = {}
 
         for car_option in car_db:
-            if car_option['id'] == car_id:
+            if car_option['id'] == car_id and int(car_option['seats']) > 0:
                 is_success = True
+                car_option['seats'] = str(int(car_option['seats']) - 1)
                 trip_details = car_option
-                ## TODO: do something with car DB
                 self.car_db_handle = ray.put(car_db)
                 break
 
@@ -46,4 +53,3 @@ class CarBooker:
 if __name__ == "__main__":
     carBooker = CarBooker()
     carBooker.get_trip_options("20200430", "BOS", "DEL")
-

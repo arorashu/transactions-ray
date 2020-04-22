@@ -1,8 +1,8 @@
 # Trip booking class
 
-import ray
-import time
 import json
+
+import ray
 
 
 @ray.remote
@@ -13,6 +13,13 @@ class UserService:
         with open("./user_db.json") as f:
             user_db = json.load(f)
         self.user_db_handle = ray.put(user_db)
+
+    def cleanup(self):
+        print("user cleanup called")
+        user_db = ray.get(self.user_db_handle)
+        print(f"user db write: {user_db}")
+        with open('./user_db.json', 'w') as f:
+            json.dump(ray.get(self.user_db_handle), f, indent=4)
 
     def get_user_details(self, user_id):
         user_db = ray.get(self.user_db_handle)
@@ -27,16 +34,37 @@ class UserService:
     def make_booking(self, user_id, trip_id):
         user_db = ray.get(self.user_db_handle)
         is_success = False
-        trip_details = {}
+        error_msg = ""
 
         for user in user_db:
             if user['id'] == user_id:
-                user['bookings'].append(trip_id)
+                user['bookings'][trip_id] = True
                 self.user_db_handle = ray.put(user_db)
                 is_success = True
                 break
 
-        return is_success, trip_details
+        if is_success is False:
+            error_msg = f"user with id: {user_id} not found"
+
+        return is_success, error_msg
+
+    def cancel_booking(self, user_id, trip_id):
+        user_db = ray.get(self.user_db_handle)
+        is_success = False
+        error_msg = ""
+
+        for user in user_db:
+            if user['id'] == user_id:
+                # TODO: check if trip id exists for user
+                user['bookings'][trip_id] = False
+                self.user_db_handle = ray.put(user_db)
+                is_success = True
+                break
+
+        if is_success is False:
+            error_msg = f"user with id: {user_id} not found"
+
+        return is_success, error_msg
 
 
 if __name__ == "__main__":

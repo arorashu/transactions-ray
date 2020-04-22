@@ -1,44 +1,50 @@
 [
-  {
-    "id": "2000",
-    "airport": "NYC",
-    "date": "20200430",
-    "time": "900",
-    "price": "40"
-  },
-  {
-    "id": "2001",
-    "airport": "NYC",
-    "date": "20200430",
-    "time": "1500",
-    "price": "50"
-  },
-  {
-    "id": "2002",
-    "airport": "BOS",
-    "date": "20200430",
-    "time": "1000",
-    "price": "60"
-  },
-  {
-    "id": "2003",
-    "airport": "NYC",
-    "date": "20200429",
-    "time": "0700",
-    "price": "30"
-  },
-  {
-    "id": "2004",
-    "airport": "BOS",
-    "date": "20200429",
-    "time": "0800",
-    "price": "35"
-  },
-  {
-    "id": "2005",
-    "airport": "BOS",
-    "date": "20200430",
-    "time": "1300",
-    "price": "50"
-  }
+    {
+        "id": "2000",
+        "airport": "NYC",
+        "date": "20200430",
+        "time": "900",
+        "price": "40",
+        "seats": "4"
+    },
+    {
+        "id": "2001",
+        "airport": "NYC",
+        "date": "20200430",
+        "time": "1500",
+        "price": "50",
+        "seats": "4"
+    },
+    {
+        "id": "2002",
+        "airport": "BOS",
+        "date": "20200430",
+        "time": "1000",
+        "price": "60",
+        "seats": "4"
+    },
+    {
+        "id": "2003",
+        "airport": "NYC",
+        "date": "20200429",
+        "time": "0700",
+        "price": "30",
+        "seats": "5"
+    },
+    {
+        "id": "2004",
+        "airport": "BOS",
+        "date": "20200429",
+        "time": "0800",
+        "price": "35",
+        "seats": "4"
+    },
+    {
+        "id": "2005",
+        "airport": "BOS",
+        "date": "20200430",
+        "time": "1300",
+        "price": "50",
+        "seats": "4"
+    }
 ]
