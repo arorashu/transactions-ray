@@ -34,8 +34,8 @@ if __name__ == "__main__":
     car_id = car_results[0]['id']
     print(f"car_id: {car_id}")
 
-    is_success, trip_id = ray.get(tripService.make_booking.remote(user_id, flight_id, car_id))
-    is_success, error_msg = ray.get(userService.make_booking.remote(user_id, trip_id))
+    is_trip_booking_success, trip_id = ray.get(tripService.make_booking.remote(user_id, flight_id, car_id))
+    is_user_success, error_msg = ray.get(userService.make_booking.remote(user_id, trip_id))
 
     print(f"trip id: {trip_id}")
 
