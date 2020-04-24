@@ -61,6 +61,7 @@ class Log:
      debug print log
 
     """
+
     def __init__(self):
         self.entries = []
         self.count = 0
@@ -81,12 +82,12 @@ class Log:
             i += 1
         print(f"{self.entries[i]}")
 
-    def query(self, action_id: int, action_command_type: str):
+    def query(self, action_id: int) -> []:
         all_entries_for_action = []
         for entry in self.entries:
             if entry["id"] == action_id:
                 all_entries_for_action.append(entry)
-        return res
+        return all_entries_for_action
 
 
 class Saga:
@@ -141,7 +142,6 @@ class Saga:
         reverse the saga DAG and run the new DAG
         :return:
         """
-
         prev_node = None
         cur_node = self.execution_graph_head
         while cur_node.next is not None:
@@ -152,19 +152,42 @@ class Saga:
         cur_node.next = prev_node
 
         self.reverse_graph_head = cur_node
-        # self.reverse_graph_head.print_graph()
         head = cur_node
         print("rollback start")
         while head is not None:
-            # self.log.add(head.name + "rollback-start")
-            self.log.add_entry(head.id, head.name, ROLLBACK_START)
-            is_success = head.run_rollback_method()
-            if is_success:
-                # self.log.add(head.name + "-rollback-success")
-                self.log.add_entry(head.id, head.name, ROLLBACK_END)
-            else:
-                # self.log.add(head.name + "-rollback-fail")
-                self.log.add_entry(head.id, head.name, ROLLBACK_ABORT)
+            # query if the action has been done, what all command are complete for the txn
+            # if aborted, do nothing
+            # if started, and ended, abort
+            # else, do nothing
+            # currently, the code assumes synchronous functioning
+            # i.e. all commands return immediately
+            # TODO: extend for possible async execution
+
+            command_entries = self.log.query(head.id)
+            is_started, is_ended, is_aborted = False, False, False
+            for entry in command_entries:
+                if entry['command'] == COMMAND_START:
+                    is_started = True
+                if entry['command'] == COMMAND_ABORT:
+                    is_aborted = True
+                if entry['command'] == COMMAND_END:
+                    is_ended = True
+
+            print(f"log parse complete for node id: {head.id}")
+
+            if is_aborted:
+                # this command was already aborted, do nothing
+                pass
+            elif is_started and is_ended:
+                self.log.add_entry(head.id, head.name, ROLLBACK_START)
+                is_success = head.run_rollback_method()
+                if is_success:
+                    # self.log.add(head.name + "-rollback-success")
+                    self.log.add_entry(head.id, head.name, ROLLBACK_END)
+                else:
+                    # self.log.add(head.name + "-rollback-fail")
+                    self.log.add_entry(head.id, head.name, ROLLBACK_ABORT)
+
             head = head.next
         self.log.print()
         print("rollback complete")
