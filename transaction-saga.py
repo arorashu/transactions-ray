@@ -7,6 +7,10 @@
 
 
 class Transaction:
+    """
+    trans class
+    """
+
     # a Transaction class contains method references and arguments for that method
     # it is responsible for calling methods
     #
@@ -16,46 +20,110 @@ class Transaction:
         self.method_ref = method_ref
         self.method_args = method_args
 
-    def run(self):
+    def run(self) -> bool:
+        is_success = True
         if self.method_ref is not None:
-            self.method_ref(self.method_args)
+            is_success = self.method_ref(self.method_args)
         else:
             print("empty method ref, txn not run")
 
+        return is_success
+
 
 class Log:
-    def __init__(self, id):
-        self.id = 0
+    def __init__(self):
+        self.entries = []
+        self.count = 0
+
+    def add(self, desc: str):
+        self.entries.append(desc)
+        self.count += 1
+
+    def print(self):
+        i = 0
+        while i < self.count - 1:
+            print(f"{self.entries[i]} -> ", end=" ")
+            i += 1
+        print(f"{self.entries[i]}")
+
+    def query(self, keyword: str):
+        pass
 
 
 class Saga:
-    # a Saga class defines and coordinates transactions
-    # it is responsible for commit and or rollback of transactions
+    """
+    a Saga class defines and coordinates transactions
+    it is responsible for commit and or rollback of transactions
+    """
 
     def __init__(self):
-        self.log = []
+        self.log = Log()
         self.execution_graph_head = None
         self.execution_graph_tail = None
         self.current_transaction_id = 0
+        self.reverse_graph_head = None
 
     def start(self):
-        self.execution_graph_head = self.Graph(None, None, id=self.current_transaction_id, name="default_start")
+        self.execution_graph_head = self.Graph(None, None, id=self.current_transaction_id, name="saga_start")
         self.execution_graph_tail = self.execution_graph_head
         self.current_transaction_id += 1
         print("txn started")
 
     def commit(self):
-        # does not increase self.curent_current_transaction_id
+        # does not increase self.current_current_transaction_id
 
-        self.execution_graph_tail.next = self.Graph(None, None, id=self.current_transaction_id, name="default_end")
+        self.execution_graph_tail.next = self.Graph(None, None, id=self.current_transaction_id, name="saga_end")
         self.execution_graph_tail = self.execution_graph_tail.next
         head = self.execution_graph_head
+        failure = False
         while head is not None:
             # add to log
-            head.run_action_method()
+            self.log.add(head.name + "-start")
+            is_success = head.run_action_method()
+            if is_success:
+                self.log.add(head.name + "-success")
+            else:
+                self.log.add(head.name + "-fail")
+                failure = True
+                break
             head = head.next
+        if failure:
+            self.rollback()
+            return
 
+        self.log.print()
         print("txn committed")
+
+    def rollback(self):
+        """
+        reverse the saga DAG and run the new DAG
+        :return:
+        """
+
+        prev_node = None
+        cur_node = self.execution_graph_head
+        while cur_node.next is not None:
+            next_node = cur_node.next
+            cur_node.next = prev_node
+            prev_node = cur_node
+            cur_node = next_node
+        cur_node.next = prev_node
+
+        self.reverse_graph_head = cur_node
+        # self.reverse_graph_head.print_graph()
+        head = cur_node
+        self.log.add("rollback-start")
+        while head is not None:
+            self.log.add(head.name + "rollback-start")
+            is_success = head.run_rollback_method()
+            if is_success:
+                self.log.add(head.name + "-rollback-success")
+            else:
+                self.log.add(head.name + "-rollback-fail")
+            head = head.next
+        self.log.add("rollback-end")
+        self.log.print()
+        print("rollback complete")
 
     def add(self, action_transaction: Transaction, rollback_transaction: Transaction, **kwargs):
         head = self.execution_graph_head
@@ -89,13 +157,17 @@ class Saga:
                 self.name = "default"
             self.next = None
 
-        def run_action_method(self):
+        def run_action_method(self) -> bool:
+            is_success = True
             if self.action_transaction is not None:
-                self.action_transaction.run()
+                is_success = self.action_transaction.run()
+            return is_success
 
         def run_rollback_method(self):
+            is_success = True
             if self.rollback_transaction is not None:
-                self.rollback_transaction.run()
+                is_success = self.rollback_transaction.run()
+            return is_success
 
 
 class Game:
@@ -137,13 +209,12 @@ if __name__ == "__main__":
     saga = Saga()
     saga.start()
 
-    txn1 = Transaction(game1.add, 4)
-    rollback_txn1 = Transaction(game1.sub, 4)
+    txn1, rollback_txn1 = Transaction(game1.add, 4), Transaction(game1.sub, 4)
     txn2, rollback_txn2 = Transaction(game2.add, 5), Transaction(game2.sub, 5)
     saga.add(txn1, rollback_txn1, name="txn1")
     saga.add(txn2, rollback_txn2, name="txn2")
 
-    saga.print_graph()
+    # saga.print_graph()
     saga.commit()
     saga.print_graph()
 
