@@ -9,7 +9,7 @@ import ray
 @ray.remote
 class FlightBooker:
     def __init__(self):
-        with open("./flight_db.json") as f:
+        with open("db/flight_db.json") as f:
             flight_db = json.load(f)
         # list of dict
         self.flight_db_handle = ray.put(flight_db)
@@ -23,7 +23,7 @@ class FlightBooker:
 
     def cleanup(self):
         print("cleanup flight class called")
-        with open("./flight_db.json", 'w') as f:
+        with open("db/flight_db.json", 'w') as f:
             json.dump(ray.get(self.flight_db_handle), f, indent=4)
 
     # args: date, source, dest
@@ -63,10 +63,11 @@ class FlightBooker:
     # def cancel_booking(self, flight_id):
 
 
-def cleanup(flightBooker):
+def cleanup(flight_booker):
     print("global cleanup called")
-    flightBooker.cleanup.remote()
+    flight_booker.cleanup.remote()
     # del flightBooker
+
 
 if __name__ == "__main__":
     ray.init()

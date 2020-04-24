@@ -10,7 +10,7 @@ class UserService:
 
     def __init__(self):
         # list of dict
-        with open("./user_db.json") as f:
+        with open("db/user_db.json") as f:
             user_db = json.load(f)
         self.user_db_handle = ray.put(user_db)
 
@@ -18,7 +18,7 @@ class UserService:
         print("user cleanup called")
         user_db = ray.get(self.user_db_handle)
         print(f"user db write: {user_db}")
-        with open('./user_db.json', 'w') as f:
+        with open('db/user_db.json', 'w') as f:
             json.dump(ray.get(self.user_db_handle), f, indent=4)
 
     def get_user_details(self, user_id):

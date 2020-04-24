@@ -12,7 +12,7 @@ from flight_service import FlightBooker
 class TripBooker:
     def __init__(self):
 
-        with open("./trip_db.json") as f:
+        with open("db/trip_db.json") as f:
             trip_db = json.load(f)
 
         self.trip_db_handle = ray.put(trip_db)
@@ -30,7 +30,7 @@ class TripBooker:
         self.flight_booker.cleanup.remote()
         self.car_booker.cleanup.remote()
         # print(f"writing trip db: {trip_db}")
-        with open("./trip_db.json", 'w') as f:
+        with open("db/trip_db.json", 'w') as f:
             json.dump(ray.get(self.trip_db_handle), f, indent=4)
 
     def get_trip_options(self, date, source, dest):

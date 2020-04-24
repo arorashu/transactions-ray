@@ -10,13 +10,13 @@ class CarBooker:
 
     def __init__(self):
         # list of dict
-        with open("./car_db.json") as f:
+        with open("db/car_db.json") as f:
             car_db = json.load(f)
         self.car_db_handle = ray.put(car_db)
 
     def cleanup(self):
         print("cleanup car class called")
-        with open("./car_db.json", 'w') as file:
+        with open("db/car_db.json", 'w') as file:
             json.dump(ray.get(self.car_db_handle), file, indent=4)
 
     # args: date, airport

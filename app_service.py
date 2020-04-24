@@ -1,11 +1,11 @@
 # app service that runs the trip booking app
 
 import atexit
+
 import ray
 
 from trip_service import TripBooker
 from user_service import UserService
-
 
 
 def cleanup(actor_list):
@@ -38,4 +38,3 @@ if __name__ == "__main__":
     is_user_success, error_msg = ray.get(userService.make_booking.remote(user_id, trip_id))
 
     print(f"trip id: {trip_id}")
-

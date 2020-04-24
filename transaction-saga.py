@@ -28,6 +28,14 @@ class Transaction:
         self.method_ref = method_ref
         self.method_args = method_args
 
+    # the response of a method call, can be anything,
+    # a simple true false indicating whether the Api call succeeded or not
+    # in the wild, an API call can receive an error response,
+    # which might be a string, depending on the use case
+    # we assume such an API call is wrapped by a func that returns a simple true, false for success, failure
+    # TODO: find a way to pass this response to users defined rollback func
+    #     save it in saga log?
+
     def run(self) -> bool:
         is_success = True
         if self.method_ref is not None:
@@ -56,9 +64,10 @@ class Log:
     """
     the saga Log
     supports methods to:
-     add entries to log
-     query log
-     debug print log
+     - add entries to log
+     - query log
+     - debug print log
+     - clear log
 
     """
 
@@ -89,6 +98,9 @@ class Log:
                 all_entries_for_action.append(entry)
         return all_entries_for_action
 
+    def clear(self):
+        self.entries.clear()
+
 
 class Saga:
     """
@@ -106,7 +118,8 @@ class Saga:
     def start(self):
         self.execution_graph_head = self.Graph(None, None, id=self.current_transaction_id, name="saga_start")
         self.execution_graph_tail = self.execution_graph_head
-        self.current_transaction_id += 1
+        self.current_transaction_id = 1
+        self.log.clear()
         print("txn started")
 
     def commit(self):
@@ -258,6 +271,7 @@ class Game:
 
     def sub(self, n: int):
         self.val -= n
+        return True
 
     def add_two(self, a, b):
         self.val = a + b
@@ -269,25 +283,27 @@ class Game:
 if __name__ == "__main__":
     game1 = Game()
     game2 = Game()
-    game2.sub(1)
-    print("game 1: ", end="")
-    game1.print_val()
-    print("game 2: ", end="")
-    game2.print_val()
+    game3 = Game()
+    # uncomment the below line to create rollback
+    # game2.sub(1)
+    print(f"game 1: {game1.val}")
+    print(f"game 2: {game2.val}")
+    print(f"game 3: {game3.val}")
 
     saga = Saga()
     saga.start()
 
     txn1, rollback_txn1 = Transaction(game1.add, 4), Transaction(game1.sub, 4)
     txn2, rollback_txn2 = Transaction(game2.add, 5), Transaction(game2.sub, 5)
+    txn3, rollback_txn3 = Transaction(game3.sub, 10), Transaction(game3.add, 10)
     saga.add(txn1, rollback_txn1, name="txn1")
     saga.add(txn2, rollback_txn2, name="txn2")
+    saga.add(txn3, rollback_txn3, name="txn3")
 
     # saga.print_graph()
     saga.commit()
     saga.print_graph()
 
-    print("game 1: ", end="")
-    game1.print_val()
-    print("game 2: ", end="")
-    game2.print_val()
+    print(f"game 1: {game1.val}")
+    print(f"game 2: {game2.val}")
+    print(f"game 3: {game3.val}")
