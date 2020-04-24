@@ -1,19 +1,27 @@
 # saga transaction library
 # Created By: Shubham Arora
 
-# transaction api
-# txn.start()
-# txn.add( method, args, rollback_method, args )
+"""
+transaction api
+
+saga = Saga()
+saga.start()
+
+txn1, rollback_txn1 = Transaction(action_method, action_method_arg), Transaction(rollback_method, rollback_method_arg)
+txn2, rollback_txn2 = Transaction(action_method, action_method_arg), Transaction(rollback_method, rollback_method_arg)
+saga.add(txn1, rollback_txn1, name="txn1")
+saga.add(txn2, rollback_txn2, name="txn2")
+
+saga.commit()
+"""
 
 
 class Transaction:
     """
-    trans class
+    transaction class
+    a Transaction class contains method references and arguments for that method
+    it is responsible for calling methods, with supplied args
     """
-
-    # a Transaction class contains method references and arguments for that method
-    # it is responsible for calling methods
-    #
 
     def __init__(self, method_ref, method_args):
         # self.id = -1
@@ -30,13 +38,40 @@ class Transaction:
         return is_success
 
 
+# constants
+COMMAND_START = 1
+COMMAND_END = 2
+COMMAND_ABORT = 3
+
+ROLLBACK_START = 4
+ROLLBACK_END = 5
+ROLLBACK_ABORT = 6
+
+
+# STATUS_SUCCESS = 4
+# STATUS_FAIL = 5
+
+
 class Log:
+    """
+    the saga Log
+    supports methods to:
+     add entries to log
+     query log
+     debug print log
+
+    """
     def __init__(self):
         self.entries = []
         self.count = 0
 
-    def add(self, desc: str):
-        self.entries.append(desc)
+    def add_entry(self, action_id: int, action_name: str, action_command_type: str):
+        entry = {
+            "id": action_id,
+            "name": action_name,
+            "command": action_command_type
+        }
+        self.entries.append(entry)
         self.count += 1
 
     def print(self):
@@ -46,8 +81,12 @@ class Log:
             i += 1
         print(f"{self.entries[i]}")
 
-    def query(self, keyword: str):
-        pass
+    def query(self, action_id: int, action_command_type: str):
+        all_entries_for_action = []
+        for entry in self.entries:
+            if entry["id"] == action_id:
+                all_entries_for_action.append(entry)
+        return res
 
 
 class Saga:
@@ -78,12 +117,15 @@ class Saga:
         failure = False
         while head is not None:
             # add to log
-            self.log.add(head.name + "-start")
+            # self.log.add(head.name + "-start")
+            self.log.add_entry(head.id, head.name, COMMAND_START)
             is_success = head.run_action_method()
             if is_success:
-                self.log.add(head.name + "-success")
+                # self.log.add(head.name + "-success")
+                self.log.add_entry(head.id, head.name, COMMAND_END)
             else:
-                self.log.add(head.name + "-fail")
+                # self.log.add(head.name + "-fail")
+                self.log.add_entry(head.id, head.name, COMMAND_ABORT)
                 failure = True
                 break
             head = head.next
@@ -112,16 +154,18 @@ class Saga:
         self.reverse_graph_head = cur_node
         # self.reverse_graph_head.print_graph()
         head = cur_node
-        self.log.add("rollback-start")
+        print("rollback start")
         while head is not None:
-            self.log.add(head.name + "rollback-start")
+            # self.log.add(head.name + "rollback-start")
+            self.log.add_entry(head.id, head.name, ROLLBACK_START)
             is_success = head.run_rollback_method()
             if is_success:
-                self.log.add(head.name + "-rollback-success")
+                # self.log.add(head.name + "-rollback-success")
+                self.log.add_entry(head.id, head.name, ROLLBACK_END)
             else:
-                self.log.add(head.name + "-rollback-fail")
+                # self.log.add(head.name + "-rollback-fail")
+                self.log.add_entry(head.id, head.name, ROLLBACK_ABORT)
             head = head.next
-        self.log.add("rollback-end")
         self.log.print()
         print("rollback complete")
 
@@ -141,9 +185,11 @@ class Saga:
         print(f"id: {head.id}, {head.name}")
 
     class Graph:
-        # a node in graph is a tuple of
-        # action_transaction AND rollback_transaction
-        # currently, assume each node has only one next node, i.e. it is a directed chain
+        """
+        a node in graph is a tuple of
+        action_transaction AND rollback_transaction
+        currently, assume each node has only one next node, i.e. it is a directed chain
+        """
 
         def __init__(self, action_transaction: Transaction, rollback_transaction: Transaction, **kwargs):
             self.action_transaction = action_transaction
