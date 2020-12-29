@@ -1,5 +1,9 @@
 # Transactions in Ray
 
+## Report
+You can view the paper presenting the report [here](https://github.com/arorashu/transactions-ray/blob/master/Shubham_Arora-Transactions_on_Ray.pdf)
+
+
 ## Instructions to run
 
 1. Ensure you have python 3.6+ installed
